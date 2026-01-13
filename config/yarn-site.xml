@@ -8,4 +8,16 @@
         <name>yarn.resourcemanager.hostname</name>
         <value>resourcemanager</value>
     </property>
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>  <!-- Tránh lỗi virtual memory với Docker -->
+    </property>
+    <property>
+        <name>yarn.nodemanager.resource.memory-mb</name>
+        <value>2048</value>  <!-- Điều chỉnh theo RAM máy bạn -->
+    </property>
+    <property>
+        <name>yarn.scheduler.maximum-allocation-mb</name>
+        <value>2048</value>
+    </property>
 </configuration>

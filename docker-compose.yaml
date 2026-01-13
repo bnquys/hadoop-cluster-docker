@@ -3,7 +3,14 @@ services:
     image: apache/hadoop:3.4
     hostname: namenode
     user: root
-    command: ["hdfs", "namenode"]
+    command: >
+      sh -c "
+      if [ ! -d /hadoop/dfs/name/current ]; then
+        echo 'Formatting HDFS...';
+        hdfs namenode -format -force -nonInteractive;
+      fi;
+      hdfs namenode
+      "
     ports:
       - 9870:9870 
       - 8020:8020  
@@ -60,6 +67,81 @@ services:
       - hadoop-net
     depends_on:
       - namenode
+
+  nodemanager1:
+    image: apache/hadoop:3.4
+    hostname: nodemanager1
+    user: root
+    command: ["yarn", "nodemanager"]
+    environment:
+      HADOOP_CONF_DIR: /etc/hadoop
+    volumes:
+      - ./config:/etc/hadoop
+    networks:
+      - hadoop-net
+    depends_on:
+      - resourcemanager
+      - datanode1  # Liên kết với DataNode để YARN detect node
+
+  nodemanager2:
+    image: apache/hadoop:3.4
+    hostname: nodemanager2
+    user: root
+    command: ["yarn", "nodemanager"]
+    environment:
+      HADOOP_CONF_DIR: /etc/hadoop
+    volumes:
+      - ./config:/etc/hadoop
+    networks:
+      - hadoop-net
+    depends_on:
+      - resourcemanager
+      - datanode2
+
+  # Hadoop Client: Để quản trị HDFS và YARN
+  # - Có đầy đủ Hadoop CLI tools (hdfs, yarn commands)
+  # - Kết nối với cluster qua hadoop-net
+  # - Dùng để: admin tasks, monitor, HDFS operations
+  hadoop-client:
+    image: apache/hadoop:3.4
+    hostname: hadoop-client
+    user: root
+    command: tail -f /dev/null
+    environment:
+      HADOOP_CONF_DIR: /etc/hadoop
+    volumes:
+      - ./config:/etc/hadoop
+      - ./spark-apps:/opt/spark-apps
+    networks:
+      - hadoop-net
+    depends_on:
+      - resourcemanager
+      - nodemanager1
+      - nodemanager2
+
+  # Spark Master: Để xử lý data với Spark/PySpark
+  # - Có Spark và PySpark (built-in, không cần pip install)
+  # - Kết nối HDFS/YARN qua Hadoop client libraries (built-in Spark)
+  # - Dùng để: spark-submit, pyspark, data processing
+  # - Lưu ý: Không có Hadoop CLI, cần dùng hadoop-client để admin
+  spark-master:
+    image: apache/spark:4.1.1-scala2.13-java21-python3-r-ubuntu
+    hostname: spark-master
+    user: root
+    command: tail -f /dev/null
+    environment:
+      HADOOP_CONF_DIR: /etc/hadoop
+      SPARK_HOME: /opt/spark
+      PYSPARK_PYTHON: /usr/bin/python3
+      PYTHONPATH: /opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.9-src.zip
+    volumes:
+      - ./config:/etc/hadoop
+      - ./spark-apps:/opt/spark-apps
+    networks:
+      - hadoop-net
+    depends_on:
+      - namenode
+      - resourcemanager
 
 volumes:
   namenode-data:

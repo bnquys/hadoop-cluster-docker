@@ -1,335 +1,576 @@
-# Hadoop Cluster with Spark Integration
+# Hướng Dẫn Sử Dụng Hadoop Cluster
 
 [![Hadoop](https://img.shields.io/badge/Hadoop-3.4-orange)](https://hadoop.apache.org/)
 [![Spark](https://img.shields.io/badge/Spark-4.1.1-red)](https://spark.apache.org/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue)](https://docs.docker.com/compose/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-green)]()
 
-Production-ready Hadoop cluster with Spark integration using Docker Compose. Fully tested and verified system with complete documentation.
-
-## 🎯 Overview
-
-This is a complete Hadoop ecosystem with:
-- **HDFS:** Distributed storage with NameNode + 2 DataNodes
-- **YARN:** Resource management with ResourceManager + 2 NodeManagers  
-- **Spark:** Processing engine with PySpark support
-- **Clients:** hadoop-client (CLI tools) and spark-master (Spark runtime)
-
-**All components are fully integrated and verified working!**
+Hệ thống xử lý dữ liệu lớn với Hadoop và Spark, sẵn sàng sử dụng với Docker. Hướng dẫn này dành cho người dùng cuối.
 
 ---
 
-## ⚡ Quick Start (New Machine)
+## 📖 Giới Thiệu
 
-### Prerequisites
-- Docker Desktop installed
-- Images: `apache/hadoop:3.4`, `apache/spark:4.1.1-scala2.13-java21-python3-r-ubuntu`
-- 4GB RAM available
+Đây là hệ thống xử lý dữ liệu lớn (Big Data) cho phép bạn:
+- ✅ Lưu trữ file dữ liệu lớn (hàng GB, TB)
+- ✅ Xử lý và phân tích dữ liệu bằng Python
+- ✅ Chạy các tác vụ phân tán trên nhiều máy
+- ✅ Truy cập dữ liệu qua giao diện web
 
-### Start in 3 Steps:
+**Không cần cài đặt Hadoop hay Spark trực tiếp - tất cả chạy trong Docker!**
+
+---
+
+## 🚀 Bắt Đầu Sử Dụng
+
+### Bước 1: Chuẩn Bị
+
+Đảm bảo bạn đã cài đặt:
+- ✅ Docker Desktop (phải đang chạy)
+- ✅ Ít nhất 4GB RAM trống
+- ✅ Khoảng 5GB dung lượng ổ cứng
+
+**Khuyến nghị:** Tạo thư mục `data/` trong project để dễ upload file:
+```bash
+mkdir data
+```
+
+### Bước 2: Khởi Động Hệ Thống
+
+Mở Terminal/Command Prompt tại thư mục dự án và chạy:
 
 ```bash
-# 1. Start cluster (~60 seconds)
+# Khởi động hệ thống (mất khoảng 60 giây)
 docker compose up -d
-
-# 2. Wait for services to stabilize
-sleep 60
-
-# 3. Initialize cluster (creates directories and sample data)
-docker compose exec hadoop-client bash /opt/spark-apps/init-cluster.sh
 ```
 
-**That's it!** System is ready to use.
-
-### Verify Everything Works:
+**Đợi 60 giây** để hệ thống khởi động hoàn toàn, sau đó chạy:
 
 ```bash
-# Test Hadoop components
-docker compose exec hadoop-client bash /opt/spark-apps/complete-verification.sh
+# Vào container hadoop-client
+docker compose exec -it hadoop-client bash
 
-# Test Spark integration
-docker compose exec spark-master python3 /opt/spark-apps/simple-pyspark-test.py
+# Trong terminal của container, chạy lệnh khởi tạo:
+bash /opt/spark-apps/init-cluster.sh
+```
+
+### Bước 3: Kiểm Tra Hệ Thống
+
+Mở trình duyệt và truy cập:
+- **Quản lý file:** http://localhost:9870
+- **Quản lý tác vụ:** http://localhost:8088
+
+Nếu thấy giao diện web là hệ thống đã hoạt động! 🎉
+
+---
+
+## 💡 Cách Sử Dụng Lệnh
+
+**Tất cả lệnh dưới đây cần chạy bên trong terminal của container. Cách làm:**
+
+```bash
+# 1. Vào container hadoop-client (để quản lý HDFS, file operations)
+docker compose exec -it hadoop-client bash
+
+# 2. Hoặc vào container spark-master (để chạy Python/PySpark)
+docker compose exec -it spark-master bash
+
+# 3. Chạy các lệnh trong terminal của container
+
+# 4. Thoát container khi xong
+exit
+```
+
+**Ghi chú:** Các phần dưới đây sẽ chỉ rõ nên dùng container nào.
+
+### 🔍 Cách Nhận Biết Đang Ở Đâu
+
+**Bên trong container (sau khi chạy `docker compose exec -it ... bash`):**
+```
+root@hadoop-client:/# 
+root@spark-master:/#
+```
+👉 Prompt có dạng `root@[tên-container]:/#` - bạn có thể chạy lệnh HDFS, Python
+
+**Bên ngoài (terminal của máy tính):**
+```
+PS C:\Users\YourName\project>   # Windows
+$ ~/project                      # Mac/Linux
+```
+---
+
+## 💼 Các Tác Vụ Thường Dùng
+
+### 📤 Upload File Lên Hệ Thống
+
+**Container:** `hadoop-client`
+
+**Tình huống:** Bạn có file `data.csv` trên máy tính và muốn upload lên hệ thống.
+
+#### 🎯 Dùng Thư Mục Chia Sẻ `./data/`
+
+Hệ thống đã tự động chia sẻ thư mục `data/` giữa máy tính và container.
+
+```bash
+# Bước 1: Copy file vào thư mục data/ trong project
+# (bạn có thể kéo thả file vào thư mục này)
+
+# Bước 2: Kiểm tra file đã có
+ls -lh /data-local/
+
+# Bước 3: Upload file lên HDFS
+hdfs dfs -put /data-local/data.csv /data/raw/
+
+# Bước 4: Kiểm tra file đã lên HDFS
+hdfs dfs -ls /data/raw/
+```
+
+**Ưu điểm:**
+- ✅ Không cần lệnh `docker cp`
+- ✅ File trong thư mục `data/` tự động xuất hiện trong container
+- ✅ Dễ quản lý nhiều file cùng lúc
+- ✅ Có thể kéo thả file bằng chuột trên Windows
+
+**Lưu ý:** Nếu thư mục `data/` chưa tồn tại, tạo bằng lệnh `mkdir data`
+
+---
+
+### 📥 Download File Từ Hệ Thống
+
+**Container:** `hadoop-client`
+
+**Tình huống:** Bạn muốn tải file kết quả về máy tính.
+
+#### 🎯 Cách 1: Dùng Thư Mục Chia Sẻ `./data/` (Khuyến Nghị)
+
+```bash
+# Bước 1: Download file từ HDFS về thư mục chia sẻ
+hdfs dfs -get /data/processed/result.csv /data-local/
+
+# Bước 2: Kiểm tra file đã download
+ls -lh /data-local/result.csv
+
+# Bước 3: Thoát container
+exit
+
+# File đã tự động có trong thư mục ./data/ trên máy tính của bạn!
+```
+
+**Ưu điểm:**
+- ✅ File tự động xuất hiện trong thư mục `data/` trên máy
+- ✅ Không cần lệnh `docker cp`
+- ✅ Download nhiều file cùng lúc: `hdfs dfs -get /data/processed/* /data-local/`
+
+---
+
+#### Cách 2: Dùng docker cp (Cho File Đơn Lẻ)
+
+```bash
+# Bước 1: Download file từ HDFS
+hdfs dfs -get /data/processed/result.csv /tmp/
+
+# Bước 2: Thoát container
+exit
+
+# Bước 3: Copy file từ container về máy (chạy ở terminal của máy)
+docker cp hadoop-client:/tmp/result.csv ./result.csv
+```
+
+**Khi nào dùng:** Cần lưu file vào vị trí cụ thể ngoài thư mục `data/`.
+
+---
+
+### 📂 Xem Danh Sách File
+
+**Container:** `hadoop-client`
+
+```bash
+# Xem tất cả file trong hệ thống
+hdfs dfs -ls /
+
+# Xem file trong thư mục cụ thể
+hdfs dfs -ls /data/raw/
+
+# Xem chi tiết dung lượng
+hdfs dfs -du -h /data/
+```
+
+### 📄 Đọc Nội Dung File
+
+**Container:** `hadoop-client`
+
+```bash
+# Đọc toàn bộ file
+hdfs dfs -cat /data/raw/users.csv
+
+# Đọc 10 dòng đầu
+hdfs dfs -cat /data/raw/users.csv | head -n 10
+
+# Đọc 10 dòng cuối
+hdfs dfs -cat /data/raw/users.csv | tail -n 10
+```
+
+### 🗑️ Xóa File
+
+**Container:** `hadoop-client`
+
+```bash
+# Xóa một file
+hdfs dfs -rm /data/raw/old-file.csv
+
+# Xóa thư mục và tất cả file bên trong
+hdfs dfs -rm -r /data/old-folder/
+```
+
+### 📁 Tạo Thư Mục
+
+**Container:** `hadoop-client`
+
+```bash
+# Tạo thư mục mới
+hdfs dfs -mkdir -p /data/my-project/input
 ```
 
 ---
 
-## 📊 System Architecture
+## 🐍 Xử Lý Dữ Liệu Với Python (PySpark)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  Docker Network: hadoop-net                             │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Storage Layer (HDFS):                                 │
-│    ┌──────────────┐      ┌──────────────┐             │
-│    │  NameNode    │◄────►│  DataNode 1  │             │
-│    │  :9870       │      │  DataNode 2  │             │
-│    └──────────────┘      └──────────────┘             │
-│                                                         │
-│  Resource Layer (YARN):                                │
-│    ┌──────────────┐      ┌──────────────┐             │
-│    │ Resource-    │◄────►│ NodeManager1 │             │
-│    │ Manager      │      │ NodeManager2 │             │
-│    │ :8088        │      └──────────────┘             │
-│    └──────────────┘                                    │
-│                                                         │
-│  Client Layer:                                         │
-│    ┌──────────────┐      ┌──────────────┐             │
-│    │ hadoop-      │      │  spark-      │             │
-│    │ client       │      │  master      │             │
-│    │ (Hadoop CLI) │      │  (PySpark)   │             │
-│    └──────────────┘      └──────────────┘             │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
+### Bước 1: Tạo File Python
 
----
+Tạo file `my_analysis.py` trong thư mục `spark-apps/` trên máy tính của bạn (file sẽ tự động có trong container vì đã mount volume):
 
-## 🚀 Usage Examples
-
-### HDFS Operations
-
-```bash
-# List files
-docker compose exec hadoop-client hdfs dfs -ls /
-
-# Upload file
-docker compose exec hadoop-client hdfs dfs -put local-file.csv /data/raw/
-
-# Download file
-docker compose exec hadoop-client hdfs dfs -get /data/raw/users.csv ./
-
-# Read file
-docker compose exec hadoop-client hdfs dfs -cat /data/raw/users.csv
-```
-
-### YARN Operations
-
-```bash
-# List nodes
-docker compose exec hadoop-client yarn node -list
-
-# List applications
-docker compose exec hadoop-client yarn application -list
-
-# Check cluster status
-docker compose exec hadoop-client hdfs dfsadmin -report
-```
-
-### PySpark Operations
-
-```bash
-# Interactive PySpark shell
-docker compose exec spark-master pyspark
-
-# Run PySpark script
-docker compose exec spark-master python3 /opt/spark-apps/your-script.py
-
-# Read from HDFS
-docker compose exec spark-master python3 -c "
+```python
 from pyspark.sql import SparkSession
-spark = SparkSession.builder.master('local').getOrCreate()
-df = spark.read.csv('hdfs://namenode:8020/data/raw/users.csv', header=True)
-df.show()
-"
+
+# Khởi tạo Spark
+spark = SparkSession.builder \
+    .appName("My Data Analysis") \
+    .master("local") \
+    .getOrCreate()
+
+# Đọc file CSV từ HDFS
+df = spark.read.csv(
+    "hdfs://namenode:8020/data/raw/users.csv",
+    header=True,
+    inferSchema=True
+)
+
+# Xem dữ liệu
+print("=== Dữ liệu đầu vào ===")
+df.show(10)
+
+# Thực hiện phân tích
+print("=== Thống kê ===")
+df.describe().show()
+
+# Lưu kết quả
+df.write.mode("overwrite").csv(
+    "hdfs://namenode:8020/data/processed/result",
+    header=True
+)
+
+print("Hoàn thành!")
+spark.stop()
+```
+
+### Bước 2: Chạy Script
+
+**Container:** `spark-master`
+
+```bash
+# Chạy script
+python3 /opt/spark-apps/my_analysis.py
+```
+
+### Bước 3: Xem Kết Quả
+
+**Container:** `hadoop-client`
+
+```bash
+hdfs dfs -ls /data/processed/result/
+hdfs dfs -cat /data/processed/result/*.csv | head -n 20
 ```
 
 ---
 
-## 🌐 Web UIs
+## 🎯 Các Ví Dụ Thực Tế
 
-- **NameNode UI:** http://localhost:9870
-  - View HDFS status, storage, live nodes
-  
-- **ResourceManager UI:** http://localhost:8088
-  - View YARN applications, nodes, queues
+### Ví Dụ 1: Đếm Số Dòng Trong File
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("Count Rows").master("local").getOrCreate()
+df = spark.read.csv("hdfs://namenode:8020/data/raw/users.csv", header=True)
+
+total_rows = df.count()
+print(f"Tổng số dòng: {total_rows}")
+
+spark.stop()
+```
+
+### Ví Dụ 2: Lọc Dữ Liệu
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("Filter Data").master("local").getOrCreate()
+df = spark.read.csv("hdfs://namenode:8020/data/raw/users.csv", header=True)
+
+# Lọc user có age > 25
+filtered_df = df.filter(df.age > 25)
+filtered_df.show()
+
+# Lưu kết quả
+filtered_df.write.mode("overwrite").csv(
+    "hdfs://namenode:8020/data/processed/filtered_users",
+    header=True
+)
+
+spark.stop()
+```
+
+### Ví Dụ 3: Gộp Nhiều File
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("Merge Files").master("local").getOrCreate()
+
+# Đọc tất cả file CSV trong thư mục
+df = spark.read.csv("hdfs://namenode:8020/data/raw/*.csv", header=True)
+
+print(f"Tổng số dòng sau khi gộp: {df.count()}")
+
+# Lưu thành 1 file duy nhất
+df.coalesce(1).write.mode("overwrite").csv(
+    "hdfs://namenode:8020/data/processed/merged",
+    header=True
+)
+
+spark.stop()
+```
 
 ---
 
-## 🔄 Lifecycle Management
+## 🔧 Quản Lý Hệ Thống
+
+### Tắt Hệ Thống (Giữ Dữ Liệu)
 
 ```bash
-# Stop cluster (keep data)
+# Tạm dừng - dữ liệu vẫn còn
 docker compose stop
+```
 
-# Start again (data preserved)
+### Khởi Động Lại
+
+```bash
+# Chạy lại hệ thống - dữ liệu vẫn nguyên
 docker compose start
+```
 
-# Restart
+### Khởi Động Lại Hoàn Toàn
+
+```bash
+# Khởi động lại tất cả
 docker compose restart
+```
 
-# Stop and remove containers (keep volumes)
+### Xóa Và Làm Mới
+
+```bash
+# Xóa containers nhưng giữ dữ liệu
 docker compose down
 
-# Complete reset (delete everything including data)
+# Xóa hoàn toàn (cả dữ liệu) - THẬN TRỌNG!
 docker compose down -v
 ```
 
-**Note:** After `docker compose down -v`, run init-cluster.sh again.
+⚠️ **Lưu ý:** Nếu chạy `docker compose down -v`, bạn sẽ mất tất cả dữ liệu và phải chạy lại script khởi tạo.
 
 ---
 
-## 🧪 Testing & Verification
+## 📊 Xem Trạng Thái Hệ Thống
 
-### Complete System Test
+### Xem Dung Lượng
+
+**Container:** `hadoop-client`
+
 ```bash
-docker compose exec hadoop-client bash /opt/spark-apps/complete-verification.sh
+# Xem dung lượng đã dùng
+hdfs dfs -df -h /
+
+# Xem dung lượng từng thư mục
+hdfs dfs -du -h /data/
 ```
 
-**Tests:**
-- ✓ HDFS NameNode and DataNodes
-- ✓ YARN ResourceManager and NodeManagers
-- ✓ Network connectivity
-- ✓ HDFS read/write operations
-- ✓ Cross-container communication
+### Kiểm Tra Các Node
 
-### Spark Integration Test
+**Container:** `hadoop-client`
+
 ```bash
-docker compose exec spark-master python3 /opt/spark-apps/simple-pyspark-test.py
+# Xem các node đang chạy
+yarn node -list
+
+# Xem trạng thái HDFS
+hdfs dfsadmin -report
 ```
 
-**Tests:**
-- ✓ PySpark import
-- ✓ Read from HDFS
-- ✓ Write to HDFS
-- ✓ DataFrame operations
+### Xem Các Tác Vụ Đang Chạy
 
----
+**Container:** `hadoop-client`
 
-## 📁 Project Structure
-
-```
-hadoop-cluster/
-├── docker-compose.yaml          # Container definitions
-├── config/                      # Hadoop configuration
-│   ├── core-site.xml
-│   ├── hdfs-site.xml
-│   ├── yarn-site.xml
-│   └── mapred-site.xml
-├── spark-apps/                  # Scripts and applications
-│   ├── init-cluster.sh
-│   ├── complete-verification.sh
-│   └── simple-pyspark-test.py
-├── README.md                    # This file
-├── QUICK_START.md              # Quick reference guide
-├── STARTUP_FLOW.md             # Detailed startup process
-├── ARCHITECTURE_EXPLANATION.md # Component integration details
-└── VERIFICATION_REPORT.md      # Test results and status
-```
-
----
-
-## 📚 Documentation
-
-- **[QUICK_START.md](QUICK_START.md)** - Quick reference for common commands
-- **[STARTUP_FLOW.md](STARTUP_FLOW.md)** - Detailed system startup process
-- **[ARCHITECTURE_EXPLANATION.md](ARCHITECTURE_EXPLANATION.md)** - How components integrate
-- **[VERIFICATION_REPORT.md](VERIFICATION_REPORT.md)** - Complete test results
-
----
-
-## 🔧 Configuration
-
-### Containers
-
-| Container | Purpose | Image | Ports |
-|-----------|---------|-------|-------|
-| namenode | HDFS metadata | apache/hadoop:3.4 | 9870, 8020 |
-| datanode1, datanode2 | HDFS storage | apache/hadoop:3.4 | - |
-| resourcemanager | YARN scheduler | apache/hadoop:3.4 | 8088 |
-| nodemanager1, nodemanager2 | YARN workers | apache/hadoop:3.4 | - |
-| hadoop-client | Hadoop CLI | apache/hadoop:3.4 | - |
-| spark-master | Spark/PySpark | apache/spark:4.1.1 | - |
-
-### Resources
-
-- **HDFS Capacity:** ~1.84 TB (configurable via volumes)
-- **YARN Memory:** 4 GB total (2 GB per NodeManager)
-- **YARN Cores:** 4 cores total (2 per NodeManager)
-- **Replication Factor:** 1 (development setup)
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Containers not starting:**
 ```bash
-docker compose logs [container-name]
+# Liệt kê tác vụ đang chạy
+yarn application -list
+
+# Hoặc truy cập: http://localhost:8088
 ```
 
-**HDFS in safe mode:**
+---
+
+## ❓ Xử Lý Sự Cố
+
+### Hệ Thống Không Khởi Động
+
 ```bash
-docker compose exec hadoop-client hdfs dfsadmin -safemode leave
+# Xem log để biết lỗi
+docker compose logs namenode
+docker compose logs datanode1
 ```
 
-**PySpark not found:**
-- Already fixed! PYTHONPATH is set in docker-compose.yaml
-- No need to `pip install pyspark`
+### File Upload Bị Lỗi
 
-**Network issues:**
+**Container:** `hadoop-client`
+
 ```bash
-docker compose exec hadoop-client ping namenode
-docker compose exec hadoop-client ping spark-master
+# Kiểm tra HDFS đang chạy
+hdfs dfs -ls /
+
+# Nếu báo "safe mode", chạy:
+hdfs dfsadmin -safemode leave
+```
+
+### Python Script Báo Lỗi
+
+**Container:** `spark-master`
+
+```bash
+# Kiểm tra PySpark
+python3 -c "from pyspark.sql import SparkSession; print('OK')"
+
+# Xem log chi tiết khi chạy script
+python3 /opt/spark-apps/your-script.py 2>&1 | more
+```
+
+### Giao Diện Web Không Mở
+
+```bash
+# Kiểm tra containers đang chạy
+docker compose ps
+
+# Khởi động lại nếu cần
+docker compose restart namenode resourcemanager
 ```
 
 ---
 
-## ✅ Verification Status
+## 🎓 Mẹo Sử Dụng
 
-**Last Tested:** January 13, 2026
+### 1. Làm Việc Với File Lớn
 
-| Component | Status | Tests |
-|-----------|--------|-------|
-| HDFS | ✅ PASS | 6/6 |
-| YARN | ✅ PASS | 3/3 |
-| Network | ✅ PASS | 4/4 |
-| Operations | ✅ PASS | 4/4 |
-| Spark | ✅ PASS | 2/2 |
-| **Total** | **✅ PASS** | **19/19** |
+**Container:** `hadoop-client`
 
-**System Status:** FULLY OPERATIONAL  
-**Integration:** VERIFIED  
-**Stability:** CONFIRMED
-
----
-
-## 🤝 Contributing
-
-Found an issue or have a suggestion? Please:
-1. Check [VERIFICATION_REPORT.md](VERIFICATION_REPORT.md) for known status
-2. Review [ARCHITECTURE_EXPLANATION.md](ARCHITECTURE_EXPLANATION.md) for design
-3. Open an issue with details
-
----
-
-## 📄 License
-
-This project uses:
-- Apache Hadoop (Apache License 2.0)
-- Apache Spark (Apache License 2.0)
-- Docker (Apache License 2.0)
-
----
-
-## 🎓 Additional Resources
-
-- [Apache Hadoop Documentation](https://hadoop.apache.org/docs/current/)
-- [Apache Spark Documentation](https://spark.apache.org/docs/latest/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
-
----
-
-**Built with ❤️ for Big Data Processing**
-
-**Status:** ✅ Production Ready | 🧪 Fully Tested | 📚 Well Documented
-- Do **not** re-format unless you want to wipe HDFS metadata (it deletes all data).
-
-## Troubleshooting
-- If UI is unreachable, check `docker compose ps` and `docker compose logs namenode`.
-- Permission errors on data dirs: re-run step 2; if needed, prepare DN dirs (rare with `user: root`):
+Khi upload file lớn (>1GB):
+```bash
+hdfs dfs -put -f /path/to/large-file.csv /data/raw/
 ```
-docker compose run --rm --user root datanode1 bash -c "mkdir -p /hadoop/dfs/data && chown -R hadoop:hadoop /hadoop/dfs/data"
-docker compose run --rm --user root datanode2 bash -c "mkdir -p /hadoop/dfs/data && chown -R hadoop:hadoop /hadoop/dfs/data"
+
+### 2. Kiểm Tra Nhanh Python Script
+
+**Container:** `spark-master`
+
+Trước khi chạy script phức tạp, test nhanh:
+```bash
+python3 -c "
+from pyspark.sql import SparkSession
+spark = SparkSession.builder.master('local').getOrCreate()
+print('Spark version:', spark.version)
+spark.stop()
+"
 ```
+
+### 3. Backup Dữ Liệu
+
+**Container:** `hadoop-client`
+
+```bash
+# Download toàn bộ thư mục về container
+hdfs dfs -get /data/processed /tmp/backup/
+
+# Thoát và copy về máy
+exit
+docker cp hadoop-client:/tmp/backup ./backup/
+```
+
+### 4. Xem Log Real-time
+
+```bash
+# Theo dõi log trực tiếp
+docker compose logs -f namenode
+```
+
+---
+
+## 📞 Trợ Giúp Thêm
+
+### Giao Diện Web
+
+| Trang | Địa Chỉ | Mục Đích |
+|-------|---------|----------|
+| Quản lý file | http://localhost:9870 | Xem file, dung lượng, trạng thái |
+| Quản lý tác vụ | http://localhost:8088 | Xem job đang chạy, lịch sử |
+
+### Các Lệnh Hữu Ích
+
+```bash
+# Copy file giữa containers
+docker cp local-file.txt hadoop-client:/tmp/
+
+# Chạy lệnh shell trong container
+docker compose exec -it hadoop-client bash
+
+# Xem IP của containers (không cần -it cho lệnh ngắn)
+docker compose exec hadoop-client hostname -i
+```
+
+---
+
+## ✅ Checklist Sử Dụng Hàng Ngày
+
+- [ ] Kiểm tra Docker Desktop đang chạy
+- [ ] Chạy `docker compose ps` để xem services đang up
+- [ ] Truy cập http://localhost:9870 để xác nhận HDFS hoạt động
+- [ ] Upload file dữ liệu cần xử lý
+- [ ] Chạy Python script phân tích
+- [ ] Xem kết quả trên HDFS hoặc download về máy
+- [ ] Tắt hệ thống với `docker compose stop` khi không dùng
+
+---
+
+## 🎯 Workflow Tiêu Biểu
+
+```
+1. Chuẩn bị dữ liệu → data.csv
+2. Upload → hdfs dfs -put data.csv /data/raw/
+3. Viết script Python → my_analysis.py  
+4. Chạy script → python3 my_analysis.py
+5. Xem kết quả → hdfs dfs -cat /data/processed/result/*.csv
+6. Download về máy → hdfs dfs -get /data/processed/result ./
+```
+
+---
+
+**Chúc bạn sử dụng hiệu quả! 🚀**
+
+Nếu gặp vấn đề không giải quyết được, hãy kiểm tra log với `docker compose logs [tên-service]`

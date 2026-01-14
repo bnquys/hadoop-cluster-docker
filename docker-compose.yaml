@@ -123,7 +123,7 @@ services:
       HADOOP_CONF_DIR: /etc/hadoop
     volumes:
       - ./config:/etc/hadoop
-      - ./spark-apps:/opt/spark-apps
+      - ./spark-apps:/spark-apps
       - ./data:/data-local
     networks:
       - hadoop-net
@@ -149,7 +149,7 @@ services:
       PYTHONPATH: /opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.9-src.zip
     volumes:
       - ./config:/etc/hadoop
-      - ./spark-apps:/opt/spark-apps
+      - ./spark-apps:/spark-apps
     networks:
       - hadoop-net
     depends_on:

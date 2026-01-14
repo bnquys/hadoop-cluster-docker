@@ -1,7 +1,7 @@
 # Hướng Dẫn Sử Dụng Hadoop Cluster
 
-[![Hadoop](https://img.shields.io/badge/Hadoop-3.4-orange)](https://hadoop.apache.org/)
-[![Spark](https://img.shields.io/badge/Spark-4.1.1-red)](https://spark.apache.org/)
+[![Hadoop](https://img.shields.io/badge/Hadoop-3.4-orange)](https://hub.docker.com/r/apache/hadoop)
+[![Spark](https://img.shields.io/badge/Spark-4.1.1-red)](https://hub.docker.com/r/apache/spark)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue)](https://docs.docker.com/compose/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-green)]()
 
@@ -12,10 +12,10 @@ Hệ thống xử lý dữ liệu lớn với Hadoop và Spark, sẵn sàng sử
 ## 📖 Giới Thiệu
 
 Đây là hệ thống xử lý dữ liệu lớn (Big Data) cho phép bạn:
-- ✅ Lưu trữ file dữ liệu lớn (hàng GB, TB)
-- ✅ Xử lý và phân tích dữ liệu bằng Python
-- ✅ Chạy các tác vụ phân tán trên nhiều máy
-- ✅ Truy cập dữ liệu qua giao diện web
+- ✅ Lưu trữ file dữ liệu lớn.
+- ✅ Xử lý và phân tích dữ liệu bằng Python.
+- ✅ Mô phỏng chạy các tác vụ phân tán trên nhiều máy.
+- ✅ Truy cập dữ liệu qua giao diện web.
 
 **Không cần cài đặt Hadoop hay Spark trực tiếp - tất cả chạy trong Docker!**
 
@@ -44,15 +44,22 @@ Mở Terminal/Command Prompt tại thư mục dự án và chạy:
 docker compose up -d
 ```
 
-**Đợi 60 giây** để hệ thống khởi động hoàn toàn, sau đó chạy:
+**Đợi 60 giây** để hệ thống khởi động hoàn toàn, sau đó **tùy chọn** khởi tạo:
 
 ```bash
 # Vào container hadoop-client
 docker compose exec -it hadoop-client bash
 
-# Trong terminal của container, chạy lệnh khởi tạo:
-bash /opt/spark-apps/init-cluster.sh
+# (Tùy chọn) Tạo cấu trúc thư mục đề xuất:
+hdfs dfs -mkdir -p /data/raw /data/processed /data/backup
+
+# Kiểm tra:
+hdfs dfs -ls /
 ```
+
+**💡 Lưu ý:** Trong thực tế, HDFS tự động tạo thư mục khi bạn upload file. Bước này chỉ để có cấu trúc rõ ràng cho việc học tập.
+
+**📁 Thư mục script:** `/spark-apps/` (tương ứng với `./spark-apps/` trên máy tính)
 
 ### Bước 3: Kiểm Tra Hệ Thống
 
@@ -141,7 +148,7 @@ hdfs dfs -ls /data/raw/
 
 **Tình huống:** Bạn muốn tải file kết quả về máy tính.
 
-#### 🎯 Cách 1: Dùng Thư Mục Chia Sẻ `./data/` (Khuyến Nghị)
+#### 🎯 Dùng Thư Mục Chia Sẻ `./data/` (Khuyến Nghị)
 
 ```bash
 # Bước 1: Download file từ HDFS về thư mục chia sẻ
@@ -160,23 +167,6 @@ exit
 - ✅ File tự động xuất hiện trong thư mục `data/` trên máy
 - ✅ Không cần lệnh `docker cp`
 - ✅ Download nhiều file cùng lúc: `hdfs dfs -get /data/processed/* /data-local/`
-
----
-
-#### Cách 2: Dùng docker cp (Cho File Đơn Lẻ)
-
-```bash
-# Bước 1: Download file từ HDFS
-hdfs dfs -get /data/processed/result.csv /tmp/
-
-# Bước 2: Thoát container
-exit
-
-# Bước 3: Copy file từ container về máy (chạy ở terminal của máy)
-docker cp hadoop-client:/tmp/result.csv ./result.csv
-```
-
-**Khi nào dùng:** Cần lưu file vào vị trí cụ thể ngoài thư mục `data/`.
 
 ---
 
@@ -279,7 +269,7 @@ spark.stop()
 
 ```bash
 # Chạy script
-python3 /opt/spark-apps/my_analysis.py
+python3 /spark-apps/my_analysis.py
 ```
 
 ### Bước 3: Xem Kết Quả
@@ -460,7 +450,7 @@ hdfs dfsadmin -safemode leave
 python3 -c "from pyspark.sql import SparkSession; print('OK')"
 
 # Xem log chi tiết khi chạy script
-python3 /opt/spark-apps/your-script.py 2>&1 | more
+python3 /spark-apps/your-script.py 2>&1 | more
 ```
 
 ### Giao Diện Web Không Mở
